@@ -4,7 +4,7 @@
   "initial_equity": 10000,
   "history_bars": 7000,
   "train_fraction": 0.7,
-  "news": {"required": true, "path": null, "before": 1800, "after": 1800},
+  "news": {"required": false, "path": null, "before": 1800, "after": 1800},
   "risk": {"risk_per_trade": 0.0025, "daily_loss": 0.02, "max_positions": 2, "max_open_risk": 0.005, "max_age_seconds": 90, "kill_file": "STOP"},
   "strategy": {
     "warmup": 60, "lookback": 300, "pivot_wing": 3,
@@ -17,7 +17,7 @@
   "symbols": {
     "bitcoin": {"broker_symbol": null, "news_currencies": ["USD", "BTC"], "max_spread": 30, "slippage": 5,
       "contract": {"currency": "USD", "contract_size": 1, "quote_to_account": 1, "volume_min": 0.01, "volume_max": 10, "volume_step": 0.01, "min_stop": 10, "margin_per_lot": 20000, "commission_roundtrip": 0}},
-    "gold": {"broker_symbol": null, "news_currencies": ["USD", "XAU"], "max_spread": 0.5, "slippage": 0.1,
+    "gold": {"broker_symbol": "XAUUSD", "news_currencies": ["USD", "XAU"], "max_spread": 0.5, "slippage": 0.1,
       "contract": {"currency": "USD", "contract_size": 100, "quote_to_account": 1, "volume_min": 0.01, "volume_max": 10, "volume_step": 0.01, "min_stop": 0.5, "margin_per_lot": 10000, "commission_roundtrip": 7}}
   }
 }
