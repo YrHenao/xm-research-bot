@@ -9,7 +9,7 @@ Bot modular en Python para investigar estrategias sobre Bitcoin/USD y oro con en
 - Validación estricta de velas M1 cerradas.
 - Seis detectores técnicos: soportes/resistencias, tendencia, Fibonacci, tres líneas, triángulos y Hombro-Cabeza-Hombro.
 - Filtros de tendencia M15/H1/H4.
-- Filtro de noticias point-in-time con cobertura explícita.
+- Filtro de noticias point-in-time con cobertura explícita, conservado en el código pero desactivado temporalmente durante la fase actual de investigación.
 - Gestión de riesgo y simulador de cartera.
 - Replay y evaluación temporal 70/30.
 - Adaptador MT5 limitado a cuentas demo.
@@ -93,11 +93,11 @@ time,open,high,low,close,spread
 Ejemplo:
 
 ```powershell
-.\.venv\Scripts\python.exe -m bot replay --data bitcoin=btc_m1.csv --data gold=gold_m1.csv --out report-replay.json
-.\.venv\Scripts\python.exe -m bot evaluate --data bitcoin=btc_m1.csv --data gold=gold_m1.csv --out report-evaluation.json
+.\.venv\Scripts\python.exe -m bot replay --data gold=gold_m1.csv --out gold-replay.json
+.\.venv\Scripts\python.exe -m bot evaluate --data gold=gold_m1.csv --out gold-evaluation.json
 ```
 
-`evaluate` divide 70/30 por tiempo y compara la estrategia completa, cada detector aislado y la retirada de cada detector. No ajusta automáticamente parámetros.
+`replay` usa todo el histórico aportado en una sola simulación. `evaluate` divide 70/30 por tiempo y compara la estrategia completa, cada detector aislado y la retirada de cada detector. No ajusta automáticamente parámetros.
 
 ## Riesgo de simulación
 
@@ -113,7 +113,13 @@ Son parámetros de investigación, no recomendaciones financieras.
 
 ## Noticias
 
-`news.template.json` contiene cobertura vacía deliberadamente. Con `news.required=true`, la ausencia de cobertura bloquea las entradas. Esto evita tratar un archivo vacío como prueba de que no existían noticias.
+El módulo de noticias sigue dentro del proyecto (`bot/news.py`) y `news.template.json` se conserva para una fase posterior. Durante la fase actual de investigación, `config.example.json` usa:
+
+```json
+"news": {"required": false, "path": null, "before": 1800, "after": 1800}
+```
+
+Esto permite estudiar el histórico completo sin bloquear señales por ausencia de un proveedor de noticias. Para reactivar el filtro más adelante, cambie `required` a `true` y configure un archivo histórico point-in-time verificable.
 
 ## Tests
 
@@ -125,4 +131,9 @@ La versión v2 tiene 21 pruebas locales aprobadas. Consulte `VALIDACION.md` para
 
 ## Próximos pasos
 
-Consulte `ROADMAP.md`. La prioridad es validar lectura desde una cuenta MT5 demo, exportar histórico auténtico, comprobar especificaciones del broker y ejecutar evaluación fuera de muestra antes de construir un dashboard de monitoreo.
+1. Ejecutar `replay` con todo el histórico M1 disponible para obtener una primera línea base.
+2. Revisar operaciones, bloqueos, P&L simulado, drawdown y detectores activados.
+3. Ejecutar `evaluate` para comparar train/test y contribución de cada detector.
+4. Añadir validación walk-forward y sensibilidad a costes.
+5. Construir un dashboard de análisis separado del motor.
+6. Reintegrar noticias históricas point-in-time en una fase posterior.
