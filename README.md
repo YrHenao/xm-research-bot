@@ -111,6 +111,28 @@ La configuración de ejemplo usa:
 
 Son parámetros de investigación, no recomendaciones financieras.
 
+## Stop loss opcional en backtesting
+
+`strategy.stop_loss_enabled` controla únicamente el cierre por stop en `replay` y
+`evaluate`. El ejemplo usa `false` para la prueba sin stop loss. Use `true` para
+reactivarlo; si se omite el campo, se conserva el comportamiento anterior con
+stop activo. Solo se aceptan booleanos JSON (`true` / `false`).
+
+Con `false`, cruzar el stop no cierra la posición; siguen activos los cierres
+por target, timeout y fin de datos (`end`). Si una vela cruza stop y target,
+se ejecuta el target. Con `true`, el stop conserva la prioridad anterior.
+La distancia `stop_atr` y el nivel `stop` se conservan como referencias para
+dimensionar lotes, calcular riesgo nominal y fijar el target 2:1. Estos cálculos
+no cambian, pero sin ejecutar el stop ese riesgo nominal no limita la pérdida
+realizada. Los filtros de riesgo siguen controlando nuevas entradas.
+
+Esta opción no modifica el adaptador MT5 ni habilita trading real o `order_send`.
+Para guardar la prueba sin sobrescribir la línea base:
+
+```powershell
+.\.venv\Scripts\python.exe -m bot replay --data gold=gold_m1.csv --out gold-replay-no-stop.json
+```
+
 ## Noticias
 
 El módulo de noticias sigue dentro del proyecto (`bot/news.py`) y `news.template.json` se conserva para una fase posterior. Durante la fase actual de investigación, `config.example.json` usa:
@@ -127,7 +149,7 @@ Esto permite estudiar el histórico completo sin bloquear señales por ausencia 
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-La versión v2 tiene 21 pruebas locales aprobadas. Consulte `VALIDACION.md` para el alcance y las limitaciones.
+La suite cubre también stop activo/inactivo, target, timeout, fin de datos y validación de la opción. Consulte `VALIDACION.md` para el alcance y las limitaciones.
 
 ## Próximos pasos
 
