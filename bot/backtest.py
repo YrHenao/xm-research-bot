@@ -4,18 +4,23 @@ from .risk import Contract, gate, size_lots
 from .market import validate
 
 
-def exit_price(position,bar,slippage):
+def exit_price(position,bar,slippage,stop_loss_enabled=True):
     side,stop,target=position['side'],position['stop'],position['target']; add=bar.spread if side<0 else 0; op,hi,lo=bar.open+add,bar.high+add,bar.low+add
     if side>0:
-        if lo<=stop: return min(op,stop)-slippage,'stop'
+        if stop_loss_enabled and lo<=stop: return min(op,stop)-slippage,'stop'
         if hi>=target: return target,'target'
     else:
-        if hi>=stop: return max(op,stop)+slippage,'stop'
+        if stop_loss_enabled and hi>=stop: return max(op,stop)+slippage,'stop'
         if lo<=target: return target,'target'
     return None
 
 
 def run(streams,cfg,news,start=None,end=None,enabled=None,signal_fn=decide):
+    if cfg['mode']!='simulation': raise ValueError('Backtest solo permite simulation')
+    stop_loss_enabled=cfg['strategy'].get('stop_loss_enabled',True)
+    if not isinstance(stop_loss_enabled,bool): raise ValueError('stop_loss_enabled debe ser booleano')
+    timeout_enabled=cfg['strategy'].get('timeout_enabled',True)
+    if not isinstance(timeout_enabled,bool): raise ValueError('timeout_enabled debe ser booleano')
     for bars in streams.values(): validate(bars)
     contracts={s:Contract(**cfg['symbols'][s]['contract']) for s in streams}
     if any(c.currency!=cfg['account_currency'] for c in contracts.values()): raise ValueError('Moneda de contrato distinta de moneda de cuenta')
@@ -41,8 +46,8 @@ def run(streams,cfg,news,start=None,end=None,enabled=None,signal_fn=decide):
             positions[s]={'side':side,'entry':entry,'stop':stop,'target':target,'lots':lots,'risk':loss*lots,'time':now}; explanations.append({'symbol':s,'time':now,'side':side,**explanation})
         for s,(i,b) in current.items():
             if s in positions:
-                p=positions[s]; outcome=exit_price(p,b,cfg['symbols'][s]['slippage'])
-                if outcome is None and now-p['time']>=cfg['strategy']['max_hold_minutes']*60: outcome=(b.close+(b.spread if p['side']<0 else 0)-p['side']*cfg['symbols'][s]['slippage'],'timeout')
+                p=positions[s]; outcome=exit_price(p,b,cfg['symbols'][s]['slippage'],stop_loss_enabled)
+                if outcome is None and timeout_enabled and now-p['time']>=cfg['strategy']['max_hold_minutes']*60: outcome=(b.close+(b.spread if p['side']<0 else 0)-p['side']*cfg['symbols'][s]['slippage'],'timeout')
                 if outcome:
                     price,reason=outcome; c=contracts[s]; pnl=(price-p['entry'])*p['side']*p['lots']*c.contract_size*c.quote_to_account-p['lots']*c.commission_roundtrip; cash+=pnl; trades.append({**p,'symbol':s,'exit_time':now+60,'exit':price,'pnl':pnl,'reason':reason}); del positions[s]
             quotes[s]=b.close+(b.spread if s in positions and positions[s]['side']<0 else 0)

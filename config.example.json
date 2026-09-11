@@ -12,7 +12,7 @@
     "shoulder_tolerance_atr": 1.0,
     "enabled": ["levels", "trend", "fibonacci", "three_lines", "triangle", "head_shoulders"],
     "min_votes": 1, "trend_frames": [15, 60, 240], "trend_period": 20,
-    "stop_atr": 2, "reward_risk": 2, "max_hold_minutes": 60
+    "stop_loss_enabled": false, "timeout_enabled": false, "stop_atr": 2, "reward_risk": 2, "max_hold_minutes": 60
   },
   "symbols": {
     "bitcoin": {"broker_symbol": null, "news_currencies": ["USD", "BTC"], "max_spread": 30, "slippage": 5,

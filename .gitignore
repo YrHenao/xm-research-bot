@@ -7,3 +7,6 @@ report*.json
 synthetic*.csv
 mt5-demo-report.json
 *_m1.csv
+demo-state/
+gold-replay*.json
+gold-evaluation*.json

@@ -21,6 +21,10 @@ def load_config(path):
     if not finite(c): raise ValueError('Configuración no finita')
     if c['mode']!='simulation': raise ValueError('CLI solo permite simulation')
     r=c['risk']; s=c['strategy']
+    s.setdefault('stop_loss_enabled',True)
+    if not isinstance(s['stop_loss_enabled'],bool): raise ValueError('stop_loss_enabled debe ser booleano')
+    s.setdefault('timeout_enabled',True)
+    if not isinstance(s['timeout_enabled'],bool): raise ValueError('timeout_enabled debe ser booleano')
     if not 0<r['risk_per_trade']<=r['max_open_risk']<=0.1 or not 0<r['daily_loss']<1 or r['max_positions']<1: raise ValueError('Límites de riesgo inválidos')
     if not 0<c['train_fraction']<1 or c['initial_equity']<=0 or not 1<=s['pivot_wing'] or s['lookback']<s['warmup'] or s['warmup']<15: raise ValueError('Configuración inválida')
     if not set(s['enabled'])<=set(NAMES) or s['min_votes']<1 or s['trend_period']<2 or s['stop_atr']<=0 or s['reward_risk']<=0: raise ValueError('Estrategia inválida')
