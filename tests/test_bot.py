@@ -67,6 +67,7 @@ class Tests(unittest.TestCase):
             for reason in ('target','timeout','end'):
                 with self.subTest(side=side,reason=reason):
                     c=cfg(); c['strategy']['stop_loss_enabled']=False
+                    c['strategy']['timeout_enabled']=True
                     c['strategy']['max_hold_minutes']=2 if reason=='timeout' else 60
                     bs=bars(63); t=bs[60].time
                     # Entry near 100, nominal stop distance 8, target distance 16.
@@ -103,5 +104,37 @@ class Tests(unittest.TestCase):
     def test_25_backtest_rejects_non_simulation(self):
         c=cfg(); c['mode']='live'
         with self.assertRaisesRegex(ValueError,'simulation'): run({'gold':bars()},c,FileNews(None,required=False))
+
+    def test_26_disabled_timeout_keeps_position_until_target_or_end(self):
+        for side in (1,-1):
+            for reason in ('target','end'):
+                with self.subTest(side=side,reason=reason):
+                    c=cfg(); c['strategy'].update(stop_loss_enabled=False,timeout_enabled=False,max_hold_minutes=1)
+                    bs=bars(65); t=bs[60].time
+                    if reason=='target':
+                        bs[64]=Bar(t+240,100,120 if side>0 else 102,80 if side<0 else 98,100,.2)
+                    def once(history,strategy,enabled):
+                        return (side if len(history)==60 else 0),{'fixture':True}
+                    trade=run({'gold':bs},c,FileNews(None,required=False),signal_fn=once)['trades'][0]
+                    self.assertEqual(trade['reason'],reason)
+                    self.assertEqual(trade['exit_time'],t+300)
+                    for legacy in (False,True):
+                        c['strategy']['timeout_enabled']=True
+                        if legacy: del c['strategy']['timeout_enabled']
+                        baseline=run({'gold':bs},c,FileNews(None,required=False),signal_fn=once)['trades'][0]
+                        self.assertEqual(baseline['reason'],'timeout')
+                        self.assertEqual(baseline['exit_time'],t+120)
+
+    def test_27_timeout_config_validation_and_default(self):
+        with tempfile.TemporaryDirectory() as td:
+            path=Path(td)/'config.json'; c=cfg(); del c['strategy']['timeout_enabled']
+            path.write_text(json.dumps(c),encoding='utf-8')
+            self.assertIs(load_config(path)['strategy']['timeout_enabled'],True)
+            for value in ('false',0,1,None,[],{}):
+                with self.subTest(value=value):
+                    c['strategy']['timeout_enabled']=value
+                    path.write_text(json.dumps(c),encoding='utf-8')
+                    with self.assertRaisesRegex(ValueError,'timeout_enabled'): load_config(path)
+                    with self.assertRaisesRegex(ValueError,'timeout_enabled'): run({'gold':bars()},c,FileNews(None,required=False))
 
 if __name__=='__main__': unittest.main()

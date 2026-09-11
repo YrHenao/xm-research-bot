@@ -19,6 +19,8 @@ def run(streams,cfg,news,start=None,end=None,enabled=None,signal_fn=decide):
     if cfg['mode']!='simulation': raise ValueError('Backtest solo permite simulation')
     stop_loss_enabled=cfg['strategy'].get('stop_loss_enabled',True)
     if not isinstance(stop_loss_enabled,bool): raise ValueError('stop_loss_enabled debe ser booleano')
+    timeout_enabled=cfg['strategy'].get('timeout_enabled',True)
+    if not isinstance(timeout_enabled,bool): raise ValueError('timeout_enabled debe ser booleano')
     for bars in streams.values(): validate(bars)
     contracts={s:Contract(**cfg['symbols'][s]['contract']) for s in streams}
     if any(c.currency!=cfg['account_currency'] for c in contracts.values()): raise ValueError('Moneda de contrato distinta de moneda de cuenta')
@@ -45,7 +47,7 @@ def run(streams,cfg,news,start=None,end=None,enabled=None,signal_fn=decide):
         for s,(i,b) in current.items():
             if s in positions:
                 p=positions[s]; outcome=exit_price(p,b,cfg['symbols'][s]['slippage'],stop_loss_enabled)
-                if outcome is None and now-p['time']>=cfg['strategy']['max_hold_minutes']*60: outcome=(b.close+(b.spread if p['side']<0 else 0)-p['side']*cfg['symbols'][s]['slippage'],'timeout')
+                if outcome is None and timeout_enabled and now-p['time']>=cfg['strategy']['max_hold_minutes']*60: outcome=(b.close+(b.spread if p['side']<0 else 0)-p['side']*cfg['symbols'][s]['slippage'],'timeout')
                 if outcome:
                     price,reason=outcome; c=contracts[s]; pnl=(price-p['entry'])*p['side']*p['lots']*c.contract_size*c.quote_to_account-p['lots']*c.commission_roundtrip; cash+=pnl; trades.append({**p,'symbol':s,'exit_time':now+60,'exit':price,'pnl':pnl,'reason':reason}); del positions[s]
             quotes[s]=b.close+(b.spread if s in positions and positions[s]['side']<0 else 0)

@@ -119,7 +119,7 @@ reactivarlo; si se omite el campo, se conserva el comportamiento anterior con
 stop activo. Solo se aceptan booleanos JSON (`true` / `false`).
 
 Con `false`, cruzar el stop no cierra la posición; siguen activos los cierres
-por target, timeout y fin de datos (`end`). Si una vela cruza stop y target,
+por target y fin de datos (`end`), y por timeout si está habilitado. Si una vela cruza stop y target,
 se ejecuta el target. Con `true`, el stop conserva la prioridad anterior.
 La distancia `stop_atr` y el nivel `stop` se conservan como referencias para
 dimensionar lotes, calcular riesgo nominal y fijar el target 2:1. Estos cálculos
@@ -132,6 +132,19 @@ Para guardar la prueba sin sobrescribir la línea base:
 ```powershell
 .\.venv\Scripts\python.exe -m bot replay --data gold=gold_m1.csv --out gold-replay-no-stop.json
 ```
+
+## Timeout opcional en backtesting
+
+El ejemplo también usa `strategy.timeout_enabled=false`: las posiciones no se
+cierran por duración. Con stop y timeout desactivados, solo cierran por target
+o al terminar los datos. `end` es un cierre contable de la simulación para valorar
+la posición al último precio disponible, no una regla de cierre en vivo.
+El histórico finito no permite simular cuánto más se mantendría una operación.
+
+Use `timeout_enabled=true` para recuperar el límite `max_hold_minutes` (60 en
+el ejemplo). Omitir la opción conserva el timeout activo por compatibilidad;
+solo se aceptan booleanos. No cambia el target, los lotes ni los controles de
+entrada. Esta opción solo afecta a `replay` y `evaluate`, no al adaptador MT5.
 
 ## Noticias
 
