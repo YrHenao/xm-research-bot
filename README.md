@@ -2,7 +2,7 @@
 
 Bot modular en Python para investigar estrategias sobre Bitcoin/USD y oro con entradas M1, backtesting reproducible y herramientas de diagnóstico de MetaTrader 5 **exclusivamente en cuenta demo**.
 
-> Estado actual: investigación/simulación. No hay evidencia de rentabilidad. La ejecución de órdenes está bloqueada por diseño en esta versión.
+> Estado actual: investigación y prueba demo. No hay evidencia de rentabilidad. Solo el ejecutor explícito `bot.live_demo --send-demo` puede enviar órdenes, exclusivamente a una cuenta demo verificada.
 
 ## Qué incluye
 
@@ -20,9 +20,43 @@ Bot modular en Python para investigar estrategias sobre Bitcoin/USD y oro con en
 
 ## Seguridad
 
-El proyecto está pensado para investigación y paper/demo trading. `MT5Adapter.account()` rechaza cuentas reales o desconocidas. La versión actual no expone un comando para enviar órdenes y `execute()` devuelve únicamente una solicitud simulada.
+El proyecto está pensado para investigación y paper/demo trading. `MT5Adapter.account()` rechaza cuentas reales o desconocidas. `execute()` sigue bloqueando envíos; el ejecutor demo separado requiere `--send-demo` y verifica tipo, identidad de cuenta y permisos antes de enviar.
 
 No introduzca credenciales en el repositorio.
+
+## Prueba demo con precios en vivo
+
+Con MT5 abierto y conectado a una cuenta DEMO, desde la carpeta del proyecto:
+
+También puede abrir `INICIAR-DEMO.cmd` tras instalar `.venv` y el extra `[mt5]`
+en esta carpeta. El lanzador usa el Python local del proyecto.
+
+```powershell
+.\.venv\Scripts\python.exe -m bot.live_demo --send-demo
+```
+
+Solo opera el oro configurado (`XAUUSD`). El ejemplo mantiene stop y timeout
+desactivados, noticias desactivadas y target 2:1. La distancia nominal de stop
+sigue dimensionando los lotes. El target se envía al servidor; detener el programa
+no cierra posiciones. No se opera si existe cualquier posición u orden pendiente
+en la cuenta: esta primera versión no gestiona una cartera ni operaciones manuales.
+
+Antes de cada envío se comprueban cuenta demo, identidad y permisos. Un cambio
+de cuenta, envío incierto o ejecución parcial detiene el proceso sin reintentar.
+Los registros e intenciones persistentes se guardan en `demo-state`; no los borre
+para reintentar un envío incierto. Revise primero posiciones e historial en MT5.
+Use siempre el mismo directorio de estado; no ejecute copias paralelas del bot.
+
+Ctrl+C o crear el archivo `STOP` impide nuevas entradas. No cierra operaciones:
+pueden cerrarse manualmente en MT5 o por el target. Mantenga la consola y MT5
+abiertos para evaluar nuevas señales M1. Sin `--send-demo` solo prepara y registra
+solicitudes. Mercado cerrado, datos antiguos o spread excesivo bloquean entradas.
+
+Los tests automatizados utilizan una API simulada. La prueba manual conectó con
+MetaQuotes-Demo y pasó los permisos de trading; quedó esperando datos recientes
+(`stale_data_or_market_closed`). Aún no se ha confirmado un envío demo ejecutado.
+Ese mensaje no distingue mercado cerrado, historial desactualizado o diferencia
+de hora; no debe interpretarse como una orden enviada.
 
 ## Requisitos
 

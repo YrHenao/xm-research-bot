@@ -53,8 +53,9 @@ class MT5Adapter:
         if info is None: raise ValueError('Símbolo exacto no disponible')
         return {'symbol':symbol,'description':getattr(info,'description',None),'currency_base':getattr(info,'currency_base',None),'currency_profit':getattr(info,'currency_profit',None),'currency_margin':getattr(info,'currency_margin',None),'digits':getattr(info,'digits',None),'point':getattr(info,'point',None),'trade_tick_size':getattr(info,'trade_tick_size',None),'trade_contract_size':getattr(info,'trade_contract_size',None),'volume_min':getattr(info,'volume_min',None),'volume_max':getattr(info,'volume_max',None),'volume_step':getattr(info,'volume_step',None),'trade_stops_level':getattr(info,'trade_stops_level',None),'filling_mode':getattr(info,'filling_mode',None),'bid':getattr(tick,'bid',None) if tick else None,'ask':getattr(tick,'ask',None) if tick else None,'tick_time':getattr(tick,'time',None) if tick else None}
 
-    def prepare(self,*,symbol,side,stop_distance,reward_risk,bar_close,news,currencies,risk_cfg,slippage,commission_roundtrip):
+    def prepare(self,*,symbol,side,stop_distance,reward_risk,bar_close,news,currencies,risk_cfg,slippage,commission_roundtrip,stop_loss_enabled=True):
         api=self.api; a=self.account(); now=int(time.time())
+        if not isinstance(stop_loss_enabled,bool): raise ValueError('stop_loss_enabled debe ser booleano')
         if side not in (-1,1) or not all(math.isfinite(x) and x>0 for x in (stop_distance,reward_risk)): raise ValueError('Parámetros de orden inválidos')
         info=api.symbol_info(symbol); tick=api.symbol_info_tick(symbol); positions=api.positions_get(); orders=api.orders_get()
         if info is None or tick is None or positions is None or orders is None: raise RuntimeError('Estado MT5 incompleto')
@@ -85,6 +86,7 @@ class MT5Adapter:
         elif info.filling_mode & 1: filling=api.ORDER_FILLING_FOK
         else: raise RuntimeError('Modo de llenado no admitido')
         request={'action':api.TRADE_ACTION_DEAL,'symbol':symbol,'type':action,'volume':lots,'price':entry,'sl':stop,'tp':target,'deviation':int(slippage/info.point),'magic':260911,'comment':'research-demo','type_time':api.ORDER_TIME_GTC,'type_filling':filling}
+        if not stop_loss_enabled: request['sl']=0.0
         check=api.order_check(request)
         if check is None or check.retcode!=0: raise RuntimeError('order_check rechazó la orden')
         return request
